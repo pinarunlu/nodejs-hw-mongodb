@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import pino from "pino-http";
 import dotenv from "dotenv";  // dotenv'i ekledik
+import contactsRouter from "./routes/contactsRoutes.js";
 
 dotenv.config();  // .env dosyasındaki çevresel değişkenleri yükler
 
@@ -13,6 +14,7 @@ export const setupServer = () => {
   app.use(cors());
   app.use(pino());
 
+  app.use('/contacts', contactsRouter);
   // Mevcut olmayan rotalar için 404 hatası
   app.use((req, res) => {
     res.status(404).json({ message: "Not found" });

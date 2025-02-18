@@ -4,11 +4,16 @@ import { env } from '../utils/env.js';  // env fonksiyonunu import et
 export const initMongoConnection = async () => {
   try {
     // env fonksiyonu ile çevresel değişkeni al
-    const mongoURI = `mongodb+srv://${env('MONGODB_USER')}:${env('MONGODB_PASSWORD')}@${env('MONGODB_URL')}/${env('MONGODB_DB')}?retryWrites=true&w=majority`;
-    
+    const user = env('MONGODB_USER');
+    const password = env('MONGODB_PASSWORD');
+    const url = env('MONGODB_URL');
+    const db = env('MONGODB_DB');
+    const mongoURI = `mongodb+srv://${user}:${password}@${url}/${db}?retryWrites=true&w=majority`;
+
     await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      // Eski seçenekler artık gereksiz
+      // useNewUrlParser: true,   // Bu satırı kaldırın
+      // useUnifiedTopology: true, // Bu satırı kaldırın
     });
 
     console.log('Mongo connection successfully established!');
@@ -18,5 +23,3 @@ export const initMongoConnection = async () => {
     process.exit(1);
   }
 };
-
-
