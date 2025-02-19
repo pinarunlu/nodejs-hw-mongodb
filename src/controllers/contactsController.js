@@ -1,3 +1,4 @@
+import createError from 'http-errors';  // http-errors'ı import ediyoruz
 import contactsService from "../services/contacts.js";
 
 const getAllContacts = async (req, res) => {
@@ -16,24 +17,30 @@ const getAllContacts = async (req, res) => {
     });
   }
 };
-const getContactById = async (req, res) => {
+
+const getContactById = async (req, res, next) => {
   try {
     const contact = await contactsService.getContactById(req.params.id);
+
+    // Eğer contact bulunamazsa, http-errors ile hata oluşturuyoruz
+    if (!contact) {
+      throw createError(404, "Contact not found");
+    }
+
     res.status(200).json({
       status: 200,
-      message: "Successfully found contact with id {**contactId**}!",
+      message: `Successfully found contact with id ${req.params.id}!`,
       data: contact,
     });
   } catch (error) {
-    res.status(404).json({
-      status: 404,
-      message: "Contact not found",
-      error: error.message,
-    });
+    // errorHandler middleware ile otomatik olarak işlenecek
+    next(error);
   }
 };
+
 const contactsController = {
   getAllContacts,
   getContactById,
 };
+
 export default contactsController;

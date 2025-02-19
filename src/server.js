@@ -1,24 +1,29 @@
 import express from "express";
 import cors from "cors";
 import pino from "pino-http";
-import dotenv from "dotenv";  // dotenv'i ekledik
+import dotenv from "dotenv";
 import contactsRouter from "./routes/contactsRoutes.js";
+import notFoundHandler from "./middlewares/notFoundHandler.js";
+import errorHandler from "./middlewares/errorHandler.js";
 
-dotenv.config();  // .env dosyasındaki çevresel değişkenleri yükler
+dotenv.config();
 
 export const setupServer = () => {
   const app = express();
-  const PORT = process.env.PORT || 3000; // process.env.PORT kullanıyoruz
+  const PORT = process.env.PORT || 3000;
 
   // Middleware'ler
   app.use(cors());
   app.use(pino());
+  app.use(express.json()); // JSON verilerini işlemek için gerekli
 
-  app.use('/contacts', contactsRouter);
-  // Mevcut olmayan rotalar için 404 hatası
-  app.use((req, res) => {
-    res.status(404).json({ message: "Not found" });
-  });
+  app.use("/contacts", contactsRouter);
+
+  // 404 Middleware
+  app.use(notFoundHandler);
+
+  // Hata Yönetimi Middleware
+  app.use(errorHandler);
 
   // Sunucuyu başlat
   app.listen(PORT, () => {
