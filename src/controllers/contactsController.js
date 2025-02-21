@@ -2,12 +2,28 @@ import createError from 'http-errors';  // http-errors'ı import ediyoruz
 import contactsService from "../services/contacts.js";
 
 const getAllContacts = async (req, res) => {
+  const { sortBy, sortOrder, page, perPage } = req.query;
+
   try {
-    const contacts = await contactsService.getAllContacts();
+    const { contacts, totalItems, totalPages, hasPreviousPage, hasNextPage } = await contactsService.getAllContacts(
+      sortBy || 'name',   // Varsayılan olarak 'name' ile sıralama
+      sortOrder || 'asc',  // Varsayılan olarak 'asc' sıralama
+      parseInt(page) || 1, // Varsayılan olarak 1. sayfa
+      parseInt(perPage) || 10 // Varsayılan olarak 10 öğe
+    );
+
     res.status(200).json({
       status: 200,
       message: "Successfully found contacts!",
-      data: contacts,
+      data: {
+        data: contacts,
+        page,
+        perPage,
+        totalItems,
+        totalPages,
+        hasPreviousPage,
+        hasNextPage
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -17,6 +33,8 @@ const getAllContacts = async (req, res) => {
     });
   }
 };
+
+
 
 const getContactById = async (req, res, next) => {
   try {

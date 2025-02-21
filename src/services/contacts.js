@@ -1,15 +1,50 @@
 import Contact from "../db/models/contacts.js";
 
 
-const getAllContacts = async () => {
+const getAllContacts = async (sortBy = 'name', sortOrder = 'asc', page = 1, perPage = 10, isFavourite, type) => {
   try {
-    const contacts = await Contact.find();
-    return contacts;
+    const sortOrderValue = sortOrder === 'desc' ? -1 : 1; // 'asc' için 1, 'desc' için -1
+    const skip = (page - 1) * perPage;
+
+ const filter = {};  // Filtreyi başlatıyoruz
+
+    if (isFavourite !== undefined) {
+      filter.isFavourite = isFavourite === 'true'; // 'true' stringini boolean'a çeviriyoruz
+    }
+
+    const contacts = await Contact.find(filter) // Filtreyi buraya ekliyoruz
+      .collation({ locale: 'tr', strength: 1 })
+      .sort({ [sortBy]: sortOrderValue })
+      .skip(skip)
+      .limit(perPage);
+
+    if (contacts.length === 0) {
+      return { message: "No contacts found" };  // Kayıt yoksa mesaj döndürüyoruz
+    }
+
+    
+
+    const totalItems = await Contact.countDocuments(filter);  // Toplam öğe sayısını filtreli şekilde al
+
+    const totalPages = Math.ceil(totalItems / perPage); // Toplam sayfa sayısını hesapla
+    const hasPreviousPage = page > 1;
+    const hasNextPage = page < totalPages;
+
+    return {
+      contacts,
+      page,
+      perPage,
+      totalItems,
+      totalPages,
+      hasPreviousPage,
+      hasNextPage
+    };
   } catch (error) {
     console.error(error);
     throw error;
   }
 };
+
 
 const getContactById = async (contactId) => {
   try {
