@@ -5,17 +5,22 @@ const getAllContacts = async (req, res) => {
   const { sortBy, sortOrder, page, perPage } = req.query;
 
   try {
+    // Kullanıcının _id'sini alıyoruz
+    const userId = req.user._id;
+    
+
     const { contacts, totalItems, totalPages, hasPreviousPage, hasNextPage } = await contactsService.getAllContacts(
-      sortBy || 'name',   // Varsayılan olarak 'name' ile sıralama
-      sortOrder || 'asc',  // Varsayılan olarak 'asc' sıralama
-      parseInt(page) || 1, // Varsayılan olarak 1. sayfa
-      parseInt(perPage) || 10 // Varsayılan olarak 10 öğe
+      sortBy || 'name', 
+      sortOrder || 'asc', 
+      parseInt(page) || 1, 
+      parseInt(perPage) || 10,
+      userId  // Kullanıcıya ait kontakları alacağız
     );
 
     res.status(200).json({
       status: 200,
       message: "Successfully found contacts!",
-      data: {
+      
         data: contacts,
         page,
         perPage,
@@ -23,7 +28,7 @@ const getAllContacts = async (req, res) => {
         totalPages,
         hasPreviousPage,
         hasNextPage
-      }
+      
     });
   } catch (error) {
     res.status(500).json({
@@ -34,13 +39,11 @@ const getAllContacts = async (req, res) => {
   }
 };
 
-
-
 const getContactById = async (req, res, next) => {
   try {
-    const contact = await contactsService.getContactById(req.params.id);
+    const userId = req.user._id;  // Kullanıcının _id'sini alıyoruz
+    const contact = await contactsService.getContactById(req.params.id, userId);  // Kullanıcıya ait kontağı alacağız
 
-    // Eğer contact bulunamazsa, http-errors ile hata oluşturuyoruz
     if (!contact) {
       throw createError(404, "Contact not found");
     }
@@ -51,21 +54,23 @@ const getContactById = async (req, res, next) => {
       data: contact,
     });
   } catch (error) {
-    // errorHandler middleware ile otomatik olarak işlenecek
     next(error);
   }
-};
-const createContact = async (req, res) => {
+};const createContact = async (req, res) => {
   try {
     const { name, phoneNumber, email, isFavourite, contactType } = req.body;
 
-    // İletişim verilerini service'e gönder
+    // Kullanıcının _id'sini alıyoruz
+    const userId = req.user._id;
+
+    // İletişim verilerini service'e gönderirken userId'yi de ekliyoruz
     const newContact = await contactsService.createContact({
       name,
       phoneNumber,
       email,
       isFavourite,
       contactType,
+      userId,  // userId'yi buraya ekledik
     });
 
     res.status(201).json({
@@ -81,15 +86,17 @@ const createContact = async (req, res) => {
     });
   }
 };
+
 const updateContact = async (req, res, next) => {
   const { contactId } = req.params;
   const updatedData = req.body;
 
   try {
-    const updatedContact = await contactsService.updateContact(contactId, updatedData);
-    
+    const userId = req.user._id;  // Kullanıcının _id'sini alıyoruz
+    const updatedContact = await contactsService.updateContact(contactId, updatedData, userId);  // Kullanıcıya ait kontağı güncelleyeceğiz
+
     if (!updatedContact) {
-      throw createError(404, "Contact not found"); // Eğer iletişim bulunmazsa hata fırlat
+      throw createError(404, "Contact not found");
     }
 
     res.status(200).json({
@@ -98,25 +105,25 @@ const updateContact = async (req, res, next) => {
       data: updatedContact,
     });
   } catch (error) {
-    next(error); // Hata yönetimini middleware'e devret
+    next(error);
   }
 };
 const deleteContact = async (req, res, next) => {
   const { contactId } = req.params;
 
   try {
-    const deletedContact = await contactsService.deleteContact(contactId);
+    const userId = req.user._id;  // Kullanıcının _id'sini alıyoruz
+    const deletedContact = await contactsService.deleteContact(contactId, userId);  // Kullanıcıya ait kontağı sileceğiz
 
     if (!deletedContact) {
       throw createError(404, "Contact not found");
     }
 
-    res.status(204).send(); // 204 No Content
+    res.status(204).send(); 
   } catch (error) {
     next(error);
   }
 };
-
 
 
 const contactsController = {

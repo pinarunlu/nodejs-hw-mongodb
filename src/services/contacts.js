@@ -1,15 +1,19 @@
 import Contact from "../db/models/contacts.js";
+import createError from 'http-errors';  // http-errors'ı import ediyoruz
 
-
-const getAllContacts = async (sortBy = 'name', sortOrder = 'asc', page = 1, perPage = 10, isFavourite, type) => {
+const getAllContacts = async (sortBy = 'name', sortOrder = 'asc', page = 1, perPage = 10, isFavourite, type, userId) => {
   try {
     const sortOrderValue = sortOrder === 'desc' ? -1 : 1; // 'asc' için 1, 'desc' için -1
     const skip = (page - 1) * perPage;
 
- const filter = {};  // Filtreyi başlatıyoruz
+    const filter = { userId }; // Kullanıcıya özel filtreleme yapıyoruz
 
     if (isFavourite !== undefined) {
       filter.isFavourite = isFavourite === 'true'; // 'true' stringini boolean'a çeviriyoruz
+    }
+
+    if (type) {
+      filter.contactType = type; // İletişim tipi filtreleme
     }
 
     const contacts = await Contact.find(filter) // Filtreyi buraya ekliyoruz
@@ -21,8 +25,6 @@ const getAllContacts = async (sortBy = 'name', sortOrder = 'asc', page = 1, perP
     if (contacts.length === 0) {
       return { message: "No contacts found" };  // Kayıt yoksa mesaj döndürüyoruz
     }
-
-    
 
     const totalItems = await Contact.countDocuments(filter);  // Toplam öğe sayısını filtreli şekilde al
 
@@ -45,10 +47,12 @@ const getAllContacts = async (sortBy = 'name', sortOrder = 'asc', page = 1, perP
   }
 };
 
-
-const getContactById = async (contactId) => {
+const getContactById = async (contactId, userId) => {
   try {
-    const contact = await Contact.findById(contactId);
+    const contact = await Contact.findOne({ _id: contactId, userId }); // Kullanıcıya ait kontak
+    if (!contact) {
+      return { message: "Contact not found or access denied" }; // Kullanıcıya ait olmayan kontak
+    }
     return contact;
   } catch (error) {
     console.error(error);
@@ -56,8 +60,7 @@ const getContactById = async (contactId) => {
   }
 };
 
-
-const createContact = async ({ name, phoneNumber, email, isFavourite, contactType }) => {
+const createContact = async ({ name, phoneNumber, email, isFavourite, contactType, userId }) => {
   try {
     // Yeni iletişim oluşturuluyor
     const newContact = new Contact({
@@ -66,6 +69,7 @@ const createContact = async ({ name, phoneNumber, email, isFavourite, contactTyp
       email,
       isFavourite: isFavourite || false,  // Varsayılan olarak 'false' kullanıyoruz
       contactType,
+      userId,  // Yeni kontağa userId ekliyoruz
     });
 
     // Veritabanına kaydediyoruz
@@ -78,27 +82,42 @@ const createContact = async ({ name, phoneNumber, email, isFavourite, contactTyp
     throw error;
   }
 };
-const updateContact = async (contactId, updatedData) => {
+
+const updateContact = async (contactId, updatedData, userId) => {
   try {
-    const updatedContact = await Contact.findByIdAndUpdate(contactId, updatedData, {
-      new: true, // Yeni veriyi döndürmesini sağlıyoruz
-      runValidators: true, // Validasyonları çalıştır
-    });
+    const updatedContact = await Contact.findOneAndUpdate(
+      { _id: contactId, userId }, // Kullanıcıya ait olan kontak
+      updatedData,
+      {
+        new: true, // Yeni veriyi döndürmesini sağlıyoruz
+        runValidators: true, // Validasyonları çalıştır
+      }
+    );
+    if (!updatedContact) {
+      return { message: "Contact not found or access denied" }; // Kullanıcıya ait olmayan kontak
+    }
     return updatedContact;
   } catch (error) {
     console.error(error);
     throw error;
   }
 };
-const deleteContact = async (contactId) => {
+
+const deleteContact = async (contactId, userId) => {
   try {
-    const deletedContact = await Contact.findByIdAndDelete(contactId);
-    return deletedContact; // Eğer kayıt varsa döner, yoksa null döner
+    const deletedContact = await Contact.findOneAndDelete({ _id: contactId, userId });
+    
+    if (!deletedContact) {
+      throw createError(404, "Contact not found or access denied");
+    }
+
+    return true; // Başarıyla silindiğinde true dön
   } catch (error) {
     console.error(error);
-    throw error;
+    throw createError(500, "Database error");
   }
 };
+
 
 export default {
   getAllContacts,
@@ -107,5 +126,3 @@ export default {
   updateContact,
   deleteContact
 };
-
-

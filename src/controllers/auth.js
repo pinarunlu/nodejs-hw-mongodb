@@ -85,7 +85,11 @@ export const refreshTokenController = async (req, res, next) => {
       { expiresIn: '15m' }
     );
 
-    res.status(200).json({ accessToken: newAccessToken });
+    res.status(200).json({
+      status: 'success',
+      message: 'Successfully refreshed a session!',
+      accessToken: newAccessToken,
+    });
   } catch (error) {
     next(error);
   }
