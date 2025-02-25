@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import createHttpError from 'http-errors';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 import User from '../db/models/User.js';
 import Session from '../db/models/Session.js';
 import { registerUserService } from "../services/auth.js";
@@ -109,5 +111,54 @@ export const logout = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+dotenv.config();
+
+// Şifre sıfırlama e-posta gönderme fonksiyonu
+export const sendResetEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw createHttpError(400, "Email is required.");
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw createHttpError(404, "User not found!");
+    }
+
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "5m" });
+    const resetLink = `${process.env.APP_DOMAIN}/reset-password?token=${token}`;
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: "Reset Your Password",
+      html: `<p>Click the link below to reset your password. This link will expire in 5 minutes.</p>
+             <p><a href="${resetLink}">${resetLink}</a></p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      status: "success",
+      message: "Reset password email has been successfully sent.",
+      data: {},
+    });
+  } catch (error) {
+    console.error(error); // Hata loglama
+    next(createHttpError(500, "Failed to send the email, please try again later."));
   }
 };
