@@ -15,3 +15,13 @@ export const updateContactSchema = Joi.object({
   isFavourite: Joi.boolean().optional(),
   contactType: Joi.string().valid("Personal", "Work").optional(),
 }).min(1);
+
+// Şifre sıfırlama talebi için e-posta adresi doğrulama
+export const sendResetEmailSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+// Şifre sıfırlama işlemi için doğrulama şeması
+export const resetPasswordSchema = Joi.object({
+  token: Joi.string().required(),  // token, genellikle e-posta ile gönderilir
+  password: Joi.string().min(6).required(),  // minimum 6 karakter şifre
+});

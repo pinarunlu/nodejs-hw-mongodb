@@ -20,6 +20,33 @@ export const setupServer = () => {
   app.use(express.json()); // JSON verilerini işlemek için gerekli
   app.use(cookieParser()); // Cookie middleware'i ekle
 
+  app.post('/auth/reset-pwd', (req, res) => {
+    try {
+        console.log("Gelen istek:", req.body); // Terminalde görmek için
+        res.status(200).json({
+      status: "success",
+      message: "Password has been successfully reset.",
+      data: {}
+    });
+    } catch (error) {
+        console.error("Hata oluştu:", error);
+        res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+  app.post('/auth/send-reset-email', (req, res) => {
+    try {
+        console.log("Gelen istek:", req.body); // Terminalde görmek için
+       res.status(200).json({
+      status: "success",
+      message: "Reset password email has been successfully sent.",
+      data: {},
+    });
+    } catch (error) {
+        console.error("Hata oluştu:", error);
+        res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
   // Routes
   app.use("/contacts", contactsRouter);  // Mevcut contacts route'u
   app.use("/auth", authRouter);  // auth.js'i "/auth" yoluna yönlendirdik

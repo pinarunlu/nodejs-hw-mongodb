@@ -119,7 +119,8 @@ dotenv.config();
 export const sendResetEmail = async (req, res, next) => {
   try {
     const { email } = req.body;
-
+    console.log("Received email:", email); // E-posta verisini kontrol et
+    
     if (!email) {
       throw createHttpError(400, "Email is required.");
     }
@@ -160,5 +161,41 @@ export const sendResetEmail = async (req, res, next) => {
   } catch (error) {
     console.error(error); // Hata loglama
     next(createHttpError(500, "Failed to send the email, please try again later."));
+    
+  }
+};
+/**
+ * Resets user password
+ * @function
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @throws {Error} - If token is invalid or expired
+ * @throws {Error} - If user is not found
+ */
+ export const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) {
+      throw createHttpError(404, "User not found!");
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+    
+    res.status(200).json({
+      status: 200,
+      message: "Password has been successfully reset.",
+      data: {}
+    });
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      next(createHttpError(401, "Token is expired or invalid."));
+    } else {
+      next(error);
+    }
   }
 };
