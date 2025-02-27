@@ -6,6 +6,7 @@ export const contactSchema = Joi.object({
   email: Joi.string().email().optional(),
   isFavourite: Joi.boolean().optional(),
   contactType: Joi.string().valid("Personal", "Work").required(),
+  photo: Joi.string().uri().optional(),  // Cloudinary'den alınacak fotoğraf URL'si
 });
 
 export const updateContactSchema = Joi.object({

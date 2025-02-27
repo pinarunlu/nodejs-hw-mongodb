@@ -1,5 +1,7 @@
 import createError from 'http-errors';  // http-errors'ı import ediyoruz
 import contactsService from "../services/contacts.js";
+import  uploadToCloudinary  from  '../config/cloudinary.js'; // Cloudinary upload fonksiyonunu import ediyorsanız
+
 
 const getAllContacts = async (req, res) => {
   const { sortBy, sortOrder, page, perPage } = req.query;
@@ -56,21 +58,29 @@ const getContactById = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};const createContact = async (req, res) => {
+};
+const createContact = async (req, res) => {
   try {
     const { name, phoneNumber, email, isFavourite, contactType } = req.body;
-
+    
     // Kullanıcının _id'sini alıyoruz
     const userId = req.user._id;
 
-    // İletişim verilerini service'e gönderirken userId'yi de ekliyoruz
+    // Fotoğraf varsa, Cloudinary'ye yükle
+    let photoUrl = null;
+    if (req.file) {
+      photoUrl = await uploadToCloudinary(req.file.buffer);  // Fotoğrafı Cloudinary'ye yükleyip URL'yi al
+    }
+
+    // Yeni iletişim verisini oluştur
     const newContact = await contactsService.createContact({
       name,
       phoneNumber,
       email,
       isFavourite,
       contactType,
-      userId,  // userId'yi buraya ekledik
+      userId,  // userId'yi buraya ekliyoruz
+      photo: photoUrl,  // Fotoğraf URL'sini kaydediyoruz
     });
 
     res.status(201).json({
@@ -93,7 +103,14 @@ const updateContact = async (req, res, next) => {
 
   try {
     const userId = req.user._id;  // Kullanıcının _id'sini alıyoruz
-    const updatedContact = await contactsService.updateContact(contactId, updatedData, userId);  // Kullanıcıya ait kontağı güncelleyeceğiz
+
+    // Fotoğraf varsa, Cloudinary'ye yükle
+    if (req.file) {
+      updatedData.photo = await uploadToCloudinary(req.file.buffer); // Fotoğraf URL'sini al
+    }
+
+    // İletişimi güncelle
+    const updatedContact = await contactsService.updateContact(contactId, updatedData, userId);  // Kullanıcıya ait kontağı güncelle
 
     if (!updatedContact) {
       throw createError(404, "Contact not found");
@@ -108,6 +125,7 @@ const updateContact = async (req, res, next) => {
     next(error);
   }
 };
+
 const deleteContact = async (req, res, next) => {
   const { contactId } = req.params;
 

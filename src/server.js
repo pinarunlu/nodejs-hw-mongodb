@@ -46,6 +46,7 @@ export const setupServer = () => {
         res.status(500).json({ error: "Sunucu hatası" });
     }
   });
+  
 
   // Routes
   app.use("/contacts", contactsRouter);  // Mevcut contacts route'u
