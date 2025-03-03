@@ -7,11 +7,14 @@ import authRouter from "./routes/auth.js";  // auth.js dosyasını doğru şekil
 import notFoundHandler from "./middlewares/notFoundHandler.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import cookieParser from "cookie-parser";
+import setupSwagger from "../swagger/swagger.js";
 
 dotenv.config();
 
 export const setupServer = () => {
   const app = express();
+
+  setupSwagger(app);
   const PORT = process.env.PORT || 3000;
 
   // Middleware'ler
